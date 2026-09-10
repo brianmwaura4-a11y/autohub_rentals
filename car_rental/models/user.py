@@ -35,3 +35,4 @@ class User:
             password_hash=data["password_hash"],
             role=data["role"]
         )
+        
