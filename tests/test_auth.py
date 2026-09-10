@@ -142,3 +142,4 @@ def test_logout():
     result = logout_user(user)
 
     assert result is None
+    
