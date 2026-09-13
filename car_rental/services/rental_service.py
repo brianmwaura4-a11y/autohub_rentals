@@ -36,11 +36,22 @@ def get_rental_by_id(rental_id):
     return None
 
 
+def get_user_rentals(user_id):
+    rentals = get_rentals()
+
+    return [
+        rental
+        for rental in rentals
+        if rental.user_id == user_id
+    ]
+
+
 def get_active_rentals():
     rentals = get_rentals()
 
     return [
-        rental for rental in rentals
+        rental
+        for rental in rentals
         if rental.status == "Active"
     ]
 
@@ -51,7 +62,10 @@ def create_rental(
     start_date,
     end_date
 ):
-    validate_dates(start_date, end_date)
+    validate_dates(
+        start_date,
+        end_date
+    )
 
     start = datetime.strptime(
         start_date,
@@ -80,12 +94,16 @@ def create_rental(
             break
 
     if user is None:
-        raise ValueError("User not found.")
+        raise ValueError(
+            "User not found."
+        )
 
     car = get_car_by_id(car_id)
 
     if car is None:
-        raise ValueError("Car not found.")
+        raise ValueError(
+            "Car not found."
+        )
 
     if car.status != "Available":
         raise ValueError(
@@ -95,7 +113,10 @@ def create_rental(
     rentals = get_rentals()
 
     if rentals:
-        new_id = max(rental.id for rental in rentals) + 1
+        new_id = max(
+            rental.id
+            for rental in rentals
+        ) + 1
     else:
         new_id = 1
 
@@ -125,10 +146,14 @@ def create_rental(
 
 
 def return_car(rental_id):
-    rental = get_rental_by_id(rental_id)
+    rental = get_rental_by_id(
+        rental_id
+    )
 
     if rental is None:
-        raise ValueError("Rental not found.")
+        raise ValueError(
+            "Rental not found."
+        )
 
     if rental.status != "Active":
         raise ValueError(
@@ -165,10 +190,14 @@ def return_car(rental_id):
 
 
 def cancel_rental(rental_id):
-    rental = get_rental_by_id(rental_id)
+    rental = get_rental_by_id(
+        rental_id
+    )
 
     if rental is None:
-        raise ValueError("Rental not found.")
+        raise ValueError(
+            "Rental not found."
+        )
 
     if rental.status != "Active":
         raise ValueError(
