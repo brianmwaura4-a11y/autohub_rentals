@@ -20,11 +20,14 @@ def register_command(username, password, role="Customer"):
         return user
 
     except ValueError as error:
-        print(f"Registration failed: {error}")
+        print(f"Error: {error}")
         return None
 
 
-def login_command(username, password, session):
+def login_command(username, password, session=None):
+    if session is None:
+        session = {}
+
     try:
         user = login_user(
             username=username,
@@ -40,7 +43,7 @@ def login_command(username, password, session):
         return user
 
     except ValueError as error:
-        print(f"Login failed: {error}")
+        print(f"Error: {error}")
         return None
 
 
@@ -50,9 +53,12 @@ def logout_command(session):
         return
 
     username = session["user"].username
+
     session.pop("user")
 
-    print(f"{username} has been logged out successfully.")
+    print(
+        f"{username} has been logged out successfully."
+    )
 
 
 def get_current_user(session):

@@ -1,6 +1,6 @@
 import pytest
 
-from models.user import User
+from car_rental.models.user import User
 
 
 def test_user_stores_user_information():
