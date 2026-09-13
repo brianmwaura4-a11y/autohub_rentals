@@ -6,7 +6,6 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 
 def read_json(filename):
-    """Read data from a JSON file."""
     file_path = DATA_DIR / filename
 
     if not file_path.exists():
@@ -17,7 +16,6 @@ def read_json(filename):
 
 
 def write_json(filename, data):
-    """Write data to a JSON file."""
     file_path = DATA_DIR / filename
 
     with open(file_path, "w", encoding="utf-8") as file:
@@ -25,14 +23,12 @@ def write_json(filename, data):
 
 
 def append_json(filename, item):
-    """Add an item to a JSON list."""
     data = read_json(filename)
     data.append(item)
     write_json(filename, data)
 
 
 def update_json(filename, item_id, updated_item):
-    """Update an item using its ID."""
     data = read_json(filename)
 
     for index, item in enumerate(data):
@@ -45,7 +41,6 @@ def update_json(filename, item_id, updated_item):
 
 
 def delete_json(filename, item_id):
-    """Delete an item using its ID."""
     data = read_json(filename)
 
     updated_data = [
