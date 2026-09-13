@@ -1,20 +1,20 @@
-def register_command(auth_service, input_function=input):
+from car_rental.services.auth_service import (
+    register_user,
+    login_user
+)
 
-    print("\n=== User Registration ===")
 
-    username = input_function("Enter username: ")
-    password = input_function("Enter password: ")
-    role = input_function("Enter role: ")
-
+def register_command(username, password, role="Customer"):
     try:
-        user = auth_service.register_user(
+        user = register_user(
             username=username,
             password=password,
             role=role
         )
 
-        print(f"Registration successful. Welcome, {user.username}!")
+        print("Registration successful!")
         print(f"User ID: {user.id}")
+        print(f"Username: {user.username}")
         print(f"Role: {user.role}")
 
         return user
@@ -24,22 +24,17 @@ def register_command(auth_service, input_function=input):
         return None
 
 
-def login_command(auth_service, session, input_function=input):
-
-    print("\n=== User Login ===")
-
-    username = input_function("Enter username: ")
-    password = input_function("Enter password: ")
-
+def login_command(username, password, session):
     try:
-        user = auth_service.login(
+        user = login_user(
             username=username,
             password=password
         )
 
         session["user"] = user
 
-        print(f"Login successful. Welcome back, {user.username}!")
+        print("Login successful!")
+        print(f"Welcome, {user.username}!")
         print(f"Role: {user.role}")
 
         return user
@@ -49,18 +44,20 @@ def login_command(auth_service, session, input_function=input):
         return None
 
 
-def logout_command(auth_service, session):
-
+def logout_command(session):
     if "user" not in session:
         print("No user is currently logged in.")
         return
 
     username = session["user"].username
-    auth_service.logout(session)
+    session.pop("user")
+
     print(f"{username} has been logged out successfully.")
+
 
 def get_current_user(session):
     return session.get("user")
+
 
 def is_logged_in(session):
     return "user" in session
