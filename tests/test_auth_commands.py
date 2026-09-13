@@ -1,90 +1,91 @@
-from unittest.mock import Mock
+import pytest
 
-from cli.auth_commands import (
+from car_rental.cli.auth_commands import (
     register_command,
-    login_command,
-    logout_command
+    login_command
 )
+from car_rental.models import User
 
 
-def test_register_command():
-    auth_service = Mock()
-
-    fake_user = Mock()
-    fake_user.username = "terence"
-
-    auth_service.register_user.return_value = fake_user
-
-    inputs = iter([
-        "terence",
+def test_register_command_success(capsys):
+    user = register_command(
+        "brian",
         "password123",
         "Customer"
-    ])
-
-    def fake_input(prompt):
-        return next(inputs)
-
-    result = register_command(
-        auth_service,
-        input_function=fake_input
     )
 
-    auth_service.register_user.assert_called_once_with(
-        username="terence",
-        password="password123",
-        role="Customer"
+    captured = capsys.readouterr()
+
+    assert user is not None
+    assert user.username == "brian"
+    assert user.role == "Customer"
+    assert "Registration successful!" in captured.out
+    assert "Username: brian" in captured.out
+    assert "Role: Customer" in captured.out
+
+
+def test_register_command_failure(capsys):
+    register_command(
+        "ab",
+        "password123",
+        "Customer"
     )
 
-    assert result == fake_user
+    captured = capsys.readouterr()
+
+    assert "Error:" in captured.out
+    assert "Username must be at least 3 characters long." in captured.out
 
 
-def test_login_command():
-    auth_service = Mock()
+def test_login_command_success(capsys):
+    register_command(
+        "brian",
+        "password123",
+        "Customer"
+    )
 
-    fake_user = Mock()
-    fake_user.username = "terence"
-
-    auth_service.login.return_value = fake_user
-
-    inputs = iter([
-        "terence",
+    user = login_command(
+        "brian",
         "password123"
-    ])
-
-    def fake_input(prompt):
-        return next(inputs)
-
-    session = {}
-
-    result = login_command(
-        auth_service,
-        session,
-        input_function=fake_input
     )
 
-    auth_service.login.assert_called_once_with(
-        username="terence",
-        password="password123"
+    captured = capsys.readouterr()
+
+    assert user is not None
+    assert user.username == "brian"
+    assert user.role == "Customer"
+    assert "Login successful!" in captured.out
+    assert "Welcome, brian!" in captured.out
+    assert "Role: Customer" in captured.out
+
+
+def test_login_command_wrong_password(capsys):
+    register_command(
+        "brian",
+        "password123",
+        "Customer"
     )
 
-    assert result == fake_user
-    assert session["user"] == fake_user
-
-
-def test_logout_command():
-    auth_service = Mock()
-
-    fake_user = Mock()
-
-    session = {
-        "user": fake_user
-    }
-
-    logout_command(
-        auth_service,
-        session
+    user = login_command(
+        "brian",
+        "wrongpassword"
     )
 
-    auth_service.logout.assert_called_once_with(session)
+    captured = capsys.readouterr()
 
-    assert session == {}
+    assert user is None
+    assert "Error:" in captured.out
+    assert "Invalid username or password." in captured.out
+
+
+def test_login_command_unknown_user(capsys):
+    user = login_command(
+        "unknown",
+        "password123"
+    )
+
+    captured = capsys.readouterr()
+
+    assert user is None
+    assert "Error:" in captured.out
+    assert "Invalid username or password." in captured.out
