@@ -5,13 +5,10 @@ from car_rental.cli.auth_commands import (
     login_command
 )
 
-from car_rental.cli.menu import (
-    start_user_menu
-)
+from car_rental.cli.menu import start_user_menu
 
 
 def main():
-
     parser = argparse.ArgumentParser(
         description="AutoHub Car Rental Management System"
     )
@@ -35,6 +32,21 @@ def main():
         help="Password"
     )
 
+    admin_register_parser = subparsers.add_parser(
+        "register-admin",
+        help="Register a new administrator"
+    )
+
+    admin_register_parser.add_argument(
+        "username",
+        help="Administrator username"
+    )
+
+    admin_register_parser.add_argument(
+        "password",
+        help="Administrator password"
+    )
+
     login_parser = subparsers.add_parser(
         "login",
         help="Login to the system"
@@ -55,14 +67,19 @@ def main():
     session = {}
 
     if args.command == "register":
-
         register_command(
             username=args.username,
             password=args.password
         )
 
-    elif args.command == "login":
+    elif args.command == "register-admin":
+        register_command(
+            username=args.username,
+            password=args.password,
+            role="Administrator"
+        )
 
+    elif args.command == "login":
         user = login_command(
             username=args.username,
             password=args.password,
