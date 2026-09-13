@@ -1,5 +1,12 @@
 import argparse
 
+from car_rental.cli.admin_commands import (
+    list_users_command,
+    list_all_cars_command,
+    list_rentals_command,
+    delete_car_command
+)
+
 from car_rental.cli.auth_commands import (
     register_command,
     login_command
@@ -137,6 +144,35 @@ def create_parser():
         "rental_id",
         type=int
     )
+    
+        # Users
+    subparsers.add_parser(
+        "users",
+        help="List all users"
+    )
+
+    # All cars
+    subparsers.add_parser(
+        "all-cars",
+        help="List all cars"
+    )
+
+    # Rentals
+    subparsers.add_parser(
+        "rentals",
+        help="List all rentals"
+    )
+
+    # Delete car
+    delete_car_parser = subparsers.add_parser(
+        "delete-car",
+        help="Delete a car"
+    )
+
+    delete_car_parser.add_argument(
+        "car_id",
+        type=int
+    )
 
     return parser
 
@@ -183,6 +219,20 @@ def main():
     elif args.command == "return":
         return_car_command(
             args.rental_id
+        )
+        
+    elif args.command == "users":
+        list_users_command()
+
+    elif args.command == "all-cars":
+        list_all_cars_command()
+
+    elif args.command == "rentals":
+        list_rentals_command()
+
+    elif args.command == "delete-car":
+        delete_car_command(
+            args.car_id
         )
 
     else:
