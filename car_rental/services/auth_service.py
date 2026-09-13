@@ -1,150 +1,118 @@
-import hashlib
-import json
-import secrets
-from pathlib import Path
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
 
-from car_rental.models.user import User
+from car_rental.models import User
+from car_rental.utils.json_handler import (
+    read_json,
+    append_json
+)
+from car_rental.utils.validation import (
+    validate_username,
+    validate_password,
+    validate_role
+)
 
 
-class AuthService:
+USERS_FILE = "users.json"
 
-    def __init__(self, users_file=None):
-        if users_file is None:
-            users_file = (
-                Path(__file__).resolve().parent.parent
-                / "data"
-                / "users.json"
-            )
 
-        self.users_file = Path(users_file)
-        self._ensure_users_file()
+def get_users():
+    """Return all users as User objects."""
 
-    def _ensure_users_file(self):
-        self.users_file.parent.mkdir(parents=True, exist_ok=True)
+    user_data = read_json(USERS_FILE)
 
-        if not self.users_file.exists():
-            self.users_file.write_text("[]")
+    return [
+        User.from_dict(data)
+        for data in user_data
+    ]
 
-    def _load_users(self):
-        try:
-            with open(self.users_file, "r") as file:
-                data = json.load(file)
 
-            if not isinstance(data, list):
-                return []
+def find_user_by_username(username):
+    """Find a user by username, ignoring letter case."""
 
-            return data
+    username = username.strip().lower()
 
-        except (json.JSONDecodeError, FileNotFoundError):
-            return []
+    users = get_users()
 
-    def _save_users(self, users):
-        with open(self.users_file, "w") as file:
-            json.dump(users, file, indent=4)
+    for user in users:
+        if user.username.lower() == username:
+            return user
 
-    def _hash_password(self, password):
-        salt = secrets.token_hex(16)
+    return None
 
-        password_hash = hashlib.pbkdf2_hmac(
-            "sha256",
-            password.encode("utf-8"),
-            salt.encode("utf-8"),
-            100_000
+
+def register_user(
+    username,
+    password,
+    role="Customer"
+):
+    """Register a new user."""
+
+    validate_username(username)
+    validate_password(password)
+    validate_role(role)
+
+    username = username.strip()
+
+    if find_user_by_username(username) is not None:
+        raise ValueError(
+            "Username already exists."
         )
 
-        return f"{salt}${password_hash.hex()}"
+    users = get_users()
 
-    def _verify_password(self, password, stored_hash):
-        try:
-            salt, password_hash = stored_hash.split("$")
+    if users:
+        new_id = max(
+            user.id for user in users
+        ) + 1
+    else:
+        new_id = 1
 
-            calculated_hash = hashlib.pbkdf2_hmac(
-                "sha256",
-                password.encode("utf-8"),
-                salt.encode("utf-8"),
-                100_000
-            )
+    password_hash = generate_password_hash(
+        password
+    )
 
-            return secrets.compare_digest(
-                calculated_hash.hex(),
-                password_hash
-            )
+    user = User(
+        user_id=new_id,
+        username=username,
+        password_hash=password_hash,
+        role=role
+    )
 
-        except (ValueError, AttributeError):
-            return False
+    append_json(
+        USERS_FILE,
+        user.to_dict()
+    )
 
-    def _generate_user_id(self, users):
-        existing_ids = {user["id"] for user in users}
+    return user
 
-        while True:
-            user_id = f"USR{secrets.token_hex(4).upper()}"
 
-            if user_id not in existing_ids:
-                return user_id
+def login_user(username, password):
+    """Authenticate a user."""
 
-    def register_user(self, username, password, role):
-        if not username or not username.strip():
-            raise ValueError("Username cannot be empty.")
+    validate_username(username)
 
-        if not password or len(password) < 6:
-            raise ValueError(
-                "Password must be at least 6 characters long."
-            )
+    user = find_user_by_username(username)
 
-        if role not in User.VALID_ROLES:
-            raise ValueError("Invalid user role.")
-
-        username = username.strip()
-
-        users = self._load_users()
-
-        if any(
-            user["username"].lower() == username.lower()
-            for user in users
-        ):
-            raise ValueError("Username already exists.")
-
-        user_id = self._generate_user_id(users)
-
-        password_hash = self._hash_password(password)
-
-        user = User(
-            user_id=user_id,
-            username=username,
-            password_hash=password_hash,
-            role=role
+    if user is None:
+        raise ValueError(
+            "Invalid username or password."
         )
 
-        users.append(user.to_dict())
-        self._save_users(users)
+    if not check_password_hash(
+        user.password_hash,
+        password
+    ):
+        raise ValueError(
+            "Invalid username or password."
+        )
 
-        return user
+    return user
 
-    def get_user_by_username(self, username):
-        users = self._load_users()
 
-        for user_data in users:
-            if user_data["username"].lower() == username.lower():
-                return User.from_dict(user_data)
+def has_role(user, role):
+    """Check whether a user has a specific role."""
 
-        return None
-
-    def login(self, username, password):
-        user = self.get_user_by_username(username)
-
-        if user is None:
-            raise ValueError("Invalid username or password.")
-
-        if not self._verify_password(
-            password,
-            user.password_hash
-        ):
-            raise ValueError("Invalid username or password.")
-
-        return user
-
-    def has_role(self, user, role):
-        return user.role == role
-
-    def logout(self, session):
-        session.clear()
+    return user.role == role
