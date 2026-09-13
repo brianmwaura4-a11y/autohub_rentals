@@ -1,9 +1,18 @@
-from car_rental.services.auth_service import get_users
+from car_rental.services.auth_service import (
+    get_users,
+    get_user_by_id,
+    update_user_role,
+    delete_user
+)
+
 from car_rental.services.car_service import (
     get_cars,
     delete_car
 )
-from car_rental.services.rental_service import get_rentals
+
+from car_rental.services.rental_service import (
+    get_rentals
+)
 
 
 def list_users_command():
@@ -12,7 +21,7 @@ def list_users_command():
 
     if not users:
         print("No users found.")
-        return
+        return []
 
     print("\nUsers")
     print("-" * 60)
@@ -24,6 +33,60 @@ def list_users_command():
             f"Role: {user.role}"
         )
 
+    return users
+
+
+def view_user_command(user_id):
+
+    user = get_user_by_id(user_id)
+
+    if user is None:
+        print("User not found.")
+        return None
+
+    print("\nUser Details")
+    print("-" * 40)
+    print(f"ID: {user.id}")
+    print(f"Username: {user.username}")
+    print(f"Role: {user.role}")
+
+    return user
+
+
+def change_user_role_command(user_id, role):
+
+    try:
+        user = update_user_role(
+            user_id,
+            role
+        )
+
+        print("User role updated successfully.")
+        print(f"User ID: {user.id}")
+        print(f"Username: {user.username}")
+        print(f"New role: {user.role}")
+
+        return user
+
+    except ValueError as error:
+        print(f"Error: {error}")
+        return None
+
+
+def delete_user_command(user_id):
+
+    try:
+        delete_user(user_id)
+
+        print("User deleted successfully.")
+
+        return True
+
+    except ValueError as error:
+        print(f"Error: {error}")
+
+        return False
+
 
 def list_all_cars_command():
 
@@ -31,10 +94,10 @@ def list_all_cars_command():
 
     if not cars:
         print("No cars found.")
-        return
+        return []
 
     print("\nCars")
-    print("-" * 60)
+    print("-" * 70)
 
     for car in cars:
         print(
@@ -45,6 +108,23 @@ def list_all_cars_command():
             f"Status: {car.status}"
         )
 
+    return cars
+
+
+def delete_car_command(car_id):
+
+    try:
+        delete_car(car_id)
+
+        print("Car deleted successfully.")
+
+        return True
+
+    except ValueError as error:
+        print(f"Error: {error}")
+
+        return False
+
 
 def list_rentals_command():
 
@@ -52,10 +132,10 @@ def list_rentals_command():
 
     if not rentals:
         print("No rentals found.")
-        return
+        return []
 
     print("\nRentals")
-    print("-" * 60)
+    print("-" * 70)
 
     for rental in rentals:
         print(
@@ -67,13 +147,4 @@ def list_rentals_command():
             f"Status: {rental.status}"
         )
 
-
-def delete_car_command(car_id):
-
-    try:
-        delete_car(car_id)
-
-        print("Car deleted successfully.")
-
-    except ValueError as error:
-        print(f"Error: {error}")
+    return rentals
