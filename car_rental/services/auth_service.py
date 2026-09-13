@@ -148,4 +148,3 @@ class AuthService:
 
     def logout(self, session):
         session.clear()
-        
