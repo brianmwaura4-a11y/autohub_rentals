@@ -1,164 +1,306 @@
+
+from pathlib import Path
+
 import pytest
 
 from car_rental.services.car_service import (
-    get_all_cars,
+    get_cars,
     get_car_by_id,
+    get_available_cars,
     add_car,
     update_car,
     delete_car,
-    check_availability,
+    set_car_status
 )
 
 
-def sample_cars():
-    return [
-        {
-            "id": 1,
-            "make": "Toyota",
-            "model": "Corolla",
-            "year": 2022,
-            "registration": "KDA123A",
-            "category": "Sedan",
-            "price_per_day": 4000,
-            "available": True,
-        },
-        {
-            "id": 2,
-            "make": "Nissan",
-            "model": "X-Trail",
-            "year": 2021,
-            "registration": "KDB456B",
-            "category": "SUV",
-            "price_per_day": 5000,
-            "available": False,
-        },
-    ]
+CARS_FILE = (
+    Path(__file__).resolve().parent.parent
+    / "car_rental"
+    / "data"
+    / "cars.json"
+)
 
 
-def test_get_all_cars():
-    cars = sample_cars()
+@pytest.fixture(autouse=True)
+def clear_cars_file():
+    CARS_FILE.write_text("[]", encoding="utf-8")
 
-    result = get_all_cars(cars)
 
-    assert len(result) == 2
+def test_get_cars_empty():
+    cars = get_cars()
+
+    assert cars == []
+
+
+def test_add_car():
+    car = add_car(
+        "Toyota",
+        "Harrier",
+        2022,
+        "KDA 123A",
+        5000
+    )
+
+    assert car.id == 1
+    assert car.make == "Toyota"
+    assert car.model == "Harrier"
+    assert car.year == 2022
+    assert car.registration_number == "KDA 123A"
+    assert car.daily_rate == 5000
+    assert car.status == "Available"
+
+
+def test_get_cars():
+    add_car(
+        "Toyota",
+        "Harrier",
+        2022,
+        "KDA 123A",
+        5000
+    )
+
+    add_car(
+        "Mazda",
+        "CX-5",
+        2021,
+        "KDB 456B",
+        4500
+    )
+
+    cars = get_cars()
+
+    assert len(cars) == 2
+    assert cars[0].make == "Toyota"
+    assert cars[1].make == "Mazda"
 
 
 def test_get_car_by_id():
-    cars = sample_cars()
+    car = add_car(
+        "Toyota",
+        "Corolla",
+        2023,
+        "KDC 789C",
+        4000
+    )
 
-    car = get_car_by_id(cars, 1)
+    found_car = get_car_by_id(car.id)
 
-    assert car is not None
-    assert car["make"] == "Toyota"
-    assert car["model"] == "Corolla"
+    assert found_car is not None
+    assert found_car.id == car.id
+    assert found_car.model == "Corolla"
 
 
-def test_get_nonexistent_car():
-    cars = sample_cars()
-
-    car = get_car_by_id(cars, 99)
+def test_get_car_by_id_not_found():
+    car = get_car_by_id(999)
 
     assert car is None
 
 
-def test_add_car():
-    cars = []
-
-    car = add_car(
-        cars,
+def test_get_available_cars():
+    car1 = add_car(
         "Toyota",
-        "Corolla",
+        "Harrier",
         2022,
-        "KDA123A",
-        "Sedan",
-        4000,
+        "KDA 123A",
+        5000
     )
 
-    assert len(cars) == 1
-    assert car["make"] == "Toyota"
-    assert car["model"] == "Corolla"
-    assert car["available"] is True
+    car2 = add_car(
+        "Mazda",
+        "CX-5",
+        2021,
+        "KDB 456B",
+        4500
+    )
+
+    set_car_status(
+        car2.id,
+        "Rented"
+    )
+
+    available_cars = get_available_cars()
+
+    assert len(available_cars) == 1
+    assert available_cars[0].id == car1.id
 
 
-def test_add_duplicate_registration():
-    cars = sample_cars()
+def test_add_car_duplicate_registration():
+    add_car(
+        "Toyota",
+        "Harrier",
+        2022,
+        "KDA 123A",
+        5000
+    )
 
+    with pytest.raises(
+        ValueError,
+        match="Registration number already exists"
+    ):
+        add_car(
+            "Mazda",
+            "CX-5",
+            2021,
+            "KDA 123A",
+            4500
+        )
+
+
+def test_add_car_duplicate_registration_case_insensitive():
+    add_car(
+        "Toyota",
+        "Harrier",
+        2022,
+        "KDA 123A",
+        5000
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Registration number already exists"
+    ):
+        add_car(
+            "Mazda",
+            "CX-5",
+            2021,
+            "kda 123a",
+            4500
+        )
+
+
+def test_add_car_invalid_data():
     with pytest.raises(ValueError):
         add_car(
-            cars,
-            "Honda",
-            "Civic",
-            2023,
-            "KDA123A",
-            "Sedan",
-            4500,
+            "",
+            "Harrier",
+            2022,
+            "KDA 123A",
+            5000
         )
 
 
 def test_update_car():
-    cars = sample_cars()
-
-    updated_car = update_car(
-        cars,
-        1,
-        price_per_day=4500,
+    car = add_car(
+        "Toyota",
+        "Harrier",
+        2022,
+        "KDA 123A",
+        5000
     )
 
-    assert updated_car["price_per_day"] == 4500
-
-
-def test_update_car_availability():
-    cars = sample_cars()
-
     updated_car = update_car(
-        cars,
-        1,
-        available=False,
+        car.id,
+        "Toyota",
+        "RAV4",
+        2023,
+        "KDA 123A",
+        6000,
+        "Available"
     )
 
-    assert updated_car["available"] is False
+    assert updated_car.id == car.id
+    assert updated_car.model == "RAV4"
+    assert updated_car.year == 2023
+    assert updated_car.daily_rate == 6000
 
 
-def test_update_nonexistent_car():
-    cars = sample_cars()
-
-    with pytest.raises(ValueError):
+def test_update_car_not_found():
+    with pytest.raises(
+        ValueError,
+        match="Car not found"
+    ):
         update_car(
-            cars,
-            99,
-            price_per_day=5000,
+            999,
+            "Toyota",
+            "Harrier",
+            2022,
+            "KDA 123A",
+            5000,
+            "Available"
+        )
+
+
+def test_set_car_status():
+    car = add_car(
+        "Toyota",
+        "Harrier",
+        2022,
+        "KDA 123A",
+        5000
+    )
+
+    updated_car = set_car_status(
+        car.id,
+        "Rented"
+    )
+
+    assert updated_car.status == "Rented"
+
+    found_car = get_car_by_id(car.id)
+
+    assert found_car.status == "Rented"
+
+
+def test_set_car_status_invalid():
+    car = add_car(
+        "Toyota",
+        "Harrier",
+        2022,
+        "KDA 123A",
+        5000
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid car status"
+    ):
+        set_car_status(
+            car.id,
+            "Broken"
         )
 
 
 def test_delete_car():
-    cars = sample_cars()
+    car = add_car(
+        "Toyota",
+        "Harrier",
+        2022,
+        "KDA 123A",
+        5000
+    )
 
-    result = delete_car(cars, 1)
-
-    assert result is True
-    assert len(cars) == 1
-    assert cars[0]["id"] == 2
-
-
-def test_delete_nonexistent_car():
-    cars = sample_cars()
-
-    with pytest.raises(ValueError):
-        delete_car(cars, 99)
-
-
-def test_check_available_car():
-    cars = sample_cars()
-
-    result = check_availability(cars, 1)
+    result = delete_car(car.id)
 
     assert result is True
+    assert get_car_by_id(car.id) is None
+    assert get_cars() == []
 
 
-def test_check_unavailable_car():
-    cars = sample_cars()
+def test_delete_car_not_found():
+    with pytest.raises(
+        ValueError,
+        match="Car not found"
+    ):
+        delete_car(999)
 
-    result = check_availability(cars, 2)
 
-    assert result is False
-    
+def test_delete_rented_car():
+    car = add_car(
+        "Toyota",
+        "Harrier",
+        2022,
+        "KDA 123A",
+        5000
+    )
+
+    set_car_status(
+        car.id,
+        "Rented"
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="A rented car cannot be deleted"
+    ):
+        delete_car(car.id)

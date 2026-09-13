@@ -1,5 +1,5 @@
 class Car:
-    """Represents a car available in the rental management system."""
+
 
     VALID_STATUSES = {
         "Available",
@@ -29,7 +29,7 @@ class Car:
         self.status = status
 
     def to_dict(self):
-        """Convert the Car object into a dictionary for JSON storage."""
+        
         return {
             "id": self.id,
             "make": self.make,
@@ -42,7 +42,6 @@ class Car:
 
     @classmethod
     def from_dict(cls, data):
-        """Create a Car object from a dictionary."""
         return cls(
             car_id=data["id"],
             make=data["make"],
@@ -52,3 +51,5 @@ class Car:
             daily_rate=data["daily_rate"],
             status=data["status"]
         )
+
+
