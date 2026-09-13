@@ -48,16 +48,8 @@ def create_parser():
         help="Password"
     )
 
-    register_parser.add_argument(
-        "--role",
-        default="Customer",
-        choices=[
-            "Customer",
-            "Rental Staff",
-            "Administrator",
-            "Maintenance"
-        ],
-        help="User role"
+    register_parser.set_defaults(
+    role="Customer"
     )
 
     # Login
