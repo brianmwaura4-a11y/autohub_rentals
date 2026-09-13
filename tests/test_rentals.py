@@ -1,4 +1,4 @@
-import pytest  
+import pytest
 
 from car_rental.services.auth_service import register_user
 from car_rental.services.car_service import add_car
@@ -14,7 +14,6 @@ from car_rental.services.rental_service import (
 
 @pytest.fixture(autouse=True)
 def clear_data():
-    """Start each test with empty data files."""
     with open(
         "car_rental/data/users.json",
         "w",
@@ -38,8 +37,6 @@ def clear_data():
 
 
 def create_test_user_and_car():
-    """Create a user and car for rental tests."""
-
     user = register_user(
         "brian",
         "password123"

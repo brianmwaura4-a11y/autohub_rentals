@@ -18,7 +18,6 @@ RENTALS_FILE = "rentals.json"
 
 
 def get_rentals():
-    """Return all rentals as Rental objects."""
     rental_data = read_json(RENTALS_FILE)
 
     return [
@@ -28,7 +27,6 @@ def get_rentals():
 
 
 def get_rental_by_id(rental_id):
-    """Find a rental by its ID."""
     rentals = get_rentals()
 
     for rental in rentals:
@@ -39,7 +37,6 @@ def get_rental_by_id(rental_id):
 
 
 def get_active_rentals():
-    """Return all active rentals."""
     rentals = get_rentals()
 
     return [
@@ -54,8 +51,6 @@ def create_rental(
     start_date,
     end_date
 ):
-    """Create a new car rental."""
-
     validate_dates(start_date, end_date)
 
     start = datetime.strptime(
@@ -130,8 +125,6 @@ def create_rental(
 
 
 def return_car(rental_id):
-    """Return a rented car and complete the rental."""
-
     rental = get_rental_by_id(rental_id)
 
     if rental is None:
@@ -172,8 +165,6 @@ def return_car(rental_id):
 
 
 def cancel_rental(rental_id):
-    """Cancel an active rental."""
-
     rental = get_rental_by_id(rental_id)
 
     if rental is None:
