@@ -13,7 +13,6 @@ CARS_FILE = "cars.json"
 
 
 def get_cars():
-    """Return all cars as Car objects."""
     car_data = read_json(CARS_FILE)
 
     return [
@@ -23,7 +22,6 @@ def get_cars():
 
 
 def get_car_by_id(car_id):
-    """Find a car by its ID."""
     cars = get_cars()
 
     for car in cars:
@@ -34,7 +32,6 @@ def get_car_by_id(car_id):
 
 
 def get_available_cars():
-    """Return all cars that are currently available."""
     cars = get_cars()
 
     return [
@@ -50,7 +47,7 @@ def add_car(
     registration_number,
     daily_rate
 ):
-    """Add a new car to the system."""
+    
 
     validate_car_data(
         make,
@@ -97,7 +94,7 @@ def update_car(
     daily_rate,
     status
 ):
-    """Update an existing car."""
+
 
     validate_car_data(
         make,
@@ -150,7 +147,7 @@ def update_car(
 
 
 def delete_car(car_id):
-    """Delete a car from the system."""
+
 
     car = get_car_by_id(car_id)
 
@@ -174,7 +171,7 @@ def delete_car(car_id):
 
 
 def set_car_status(car_id, status):
-    """Change the status of a car."""
+    
 
     if status not in Car.VALID_STATUSES:
         raise ValueError("Invalid car status.")
