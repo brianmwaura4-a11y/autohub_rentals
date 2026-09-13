@@ -1,34 +1,79 @@
 from car_rental.services.rental_service import (
     create_rental,
     get_rental_by_id,
-    get_user_rentals,
-    cancel_rental,
-    complete_rental,
+    get_active_rentals,
+    return_car,
+    cancel_rental
 )
 
 
-def rent_car(rentals, cars, user_id, car_id, pickup_date, return_date):
-    return create_rental(
-        rentals,
-        cars,
-        user_id,
-        car_id,
-        pickup_date,
-        return_date
-    )
+def rent_car_command(user_id, car_id, start_date, end_date):
+    try:
+        rental = create_rental(
+            user_id,
+            car_id,
+            start_date,
+            end_date
+        )
+
+        print("Car rented successfully!")
+        print(f"Rental ID: {rental.id}")
+        print(f"User ID: {rental.user_id}")
+        print(f"Car ID: {rental.car_id}")
+        print(f"Start date: {rental.start_date}")
+        print(f"End date: {rental.end_date}")
+        print(f"Total cost: KSh {rental.total_cost}")
+
+        return rental
+
+    except ValueError as error:
+        print(f"Error: {error}")
+        return None
 
 
-def view_rental(rentals, rental_id):
-    return get_rental_by_id(rentals, rental_id)
+def view_rental_command(rental_id):
+    rental = get_rental_by_id(rental_id)
+
+    if rental is None:
+        print("Rental not found.")
+        return None
+
+    print(f"Rental ID: {rental.id}")
+    print(f"User ID: {rental.user_id}")
+    print(f"Car ID: {rental.car_id}")
+    print(f"Start date: {rental.start_date}")
+    print(f"End date: {rental.end_date}")
+    print(f"Total cost: KSh {rental.total_cost}")
+    print(f"Status: {rental.status}")
+
+    return rental
 
 
-def view_user_rentals(rentals, user_id):
-    return get_user_rentals(rentals, user_id)
+def cancel_rental_command(rental_id):
+    try:
+        rental = cancel_rental(rental_id)
+
+        print("Rental cancelled successfully!")
+        print(f"Rental ID: {rental.id}")
+        print(f"Status: {rental.status}")
+
+        return rental
+
+    except ValueError as error:
+        print(f"Error: {error}")
+        return None
 
 
-def cancel_user_rental(rentals, cars, rental_id, user_id):
-    return cancel_rental(rentals, cars, rental_id, user_id)
+def return_car_command(rental_id):
+    try:
+        rental = return_car(rental_id)
 
+        print("Car returned successfully!")
+        print(f"Rental ID: {rental.id}")
+        print(f"Status: {rental.status}")
 
-def complete_user_rental(rentals, cars, rental_id):
-    return complete_rental(rentals, cars, rental_id)
+        return rental
+
+    except ValueError as error:
+        print(f"Error: {error}")
+        return None
