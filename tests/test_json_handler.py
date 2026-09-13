@@ -1,68 +1,108 @@
 import json
 
 from car_rental.utils.json_handler import (
-    load_data,
-    save_data,
+    read_json,
+    write_json,
+    append_json,
+    update_json,
+    delete_json
 )
 
 
-def test_save_data(tmp_path):
-    file_path = tmp_path / "cars.json"
+def test_read_json():
+    data = read_json("users.json")
+    assert isinstance(data, list)
 
-    cars = [
+
+def test_write_json():
+    test_data = [
         {
             "id": 1,
-            "make": "Toyota",
-            "model": "Corolla",
+            "username": "testuser",
+            "password_hash": "hash",
+            "role": "Customer"
         }
     ]
 
-    save_data(file_path, cars)
+    write_json("users.json", test_data)
 
-    assert file_path.exists()
+    data = read_json("users.json")
+
+    assert data == test_data
 
 
-def test_load_data(tmp_path):
-    file_path = tmp_path / "cars.json"
-
-    cars = [
+def test_append_json():
+    test_data = [
         {
             "id": 1,
-            "make": "Toyota",
-            "model": "Corolla",
+            "username": "testuser",
+            "password_hash": "hash",
+            "role": "Customer"
         }
     ]
 
-    with open(file_path, "w", encoding="utf-8") as file:
-        json.dump(cars, file)
+    write_json("users.json", test_data)
 
-    result = load_data(file_path)
+    new_user = {
+        "id": 2,
+        "username": "anotheruser",
+        "password_hash": "hash2",
+        "role": "Customer"
+    }
 
-    assert result == cars
+    append_json("users.json", new_user)
+
+    data = read_json("users.json")
+
+    assert len(data) == 2
+    assert data[1] == new_user
 
 
-def test_save_and_load_data(tmp_path):
-    file_path = tmp_path / "cars.json"
-
-    data = [
+def test_update_json():
+    test_data = [
         {
             "id": 1,
-            "make": "Toyota",
-            "model": "Corolla",
-            "price_per_day": 4000,
+            "username": "testuser",
+            "password_hash": "hash",
+            "role": "Customer"
         }
     ]
 
-    save_data(file_path, data)
-    result = load_data(file_path)
+    write_json("users.json", test_data)
 
-    assert result == data
+    updated_user = {
+        "id": 1,
+        "username": "updateduser",
+        "password_hash": "newhash",
+        "role": "Customer"
+    }
+
+    result = update_json("users.json", 1, updated_user)
+
+    assert result is True
+    assert read_json("users.json")[0] == updated_user
 
 
-def test_load_missing_file(tmp_path):
-    file_path = tmp_path / "missing.json"
+def test_delete_json():
+    test_data = [
+        {
+            "id": 1,
+            "username": "testuser",
+            "password_hash": "hash",
+            "role": "Customer"
+        },
+        {
+            "id": 2,
+            "username": "anotheruser",
+            "password_hash": "hash2",
+            "role": "Customer"
+        }
+    ]
 
-    result = load_data(file_path)
+    write_json("users.json", test_data)
 
-    assert result == []
-    
+    result = delete_json("users.json", 1)
+
+    assert result is True
+    assert len(read_json("users.json")) == 1
+    assert read_json("users.json")[0]["id"] == 2
