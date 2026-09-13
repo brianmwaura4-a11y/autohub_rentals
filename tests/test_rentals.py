@@ -1,249 +1,351 @@
-import pytest
+import pytest  
 
+from car_rental.services.auth_service import register_user
+from car_rental.services.car_service import add_car
 from car_rental.services.rental_service import (
-    calculate_rental_cost,
     create_rental,
+    get_rentals,
     get_rental_by_id,
-    get_user_rentals,
-    cancel_rental,
-    complete_rental,
+    get_active_rentals,
+    return_car,
+    cancel_rental
 )
 
 
-def sample_cars():
-    return [
-        {
-            "id": 1,
-            "make": "Toyota",
-            "model": "Corolla",
-            "year": 2022,
-            "registration": "KDA123A",
-            "category": "Sedan",
-            "price_per_day": 4000,
-            "available": True,
-        },
-        {
-            "id": 2,
-            "make": "Nissan",
-            "model": "X-Trail",
-            "year": 2021,
-            "registration": "KDB456B",
-            "category": "SUV",
-            "price_per_day": 5000,
-            "available": False,
-        },
-    ]
+@pytest.fixture(autouse=True)
+def clear_data():
+    """Start each test with empty data files."""
+    with open(
+        "car_rental/data/users.json",
+        "w",
+        encoding="utf-8"
+    ) as file:
+        file.write("[]")
+
+    with open(
+        "car_rental/data/cars.json",
+        "w",
+        encoding="utf-8"
+    ) as file:
+        file.write("[]")
+
+    with open(
+        "car_rental/data/rentals.json",
+        "w",
+        encoding="utf-8"
+    ) as file:
+        file.write("[]")
 
 
-def sample_rentals():
-    return []
+def create_test_user_and_car():
+    """Create a user and car for rental tests."""
 
+    user = register_user(
+        "brian",
+        "password123"
+    )
 
-def test_calculate_rental_cost():
-    result = calculate_rental_cost(4000, 3)
+    car = add_car(
+        "Toyota",
+        "Harrier",
+        2022,
+        "KDA 123A",
+        5000
+    )
 
-    assert result == 12000
-
-
-def test_calculate_rental_cost_one_day():
-    result = calculate_rental_cost(4000, 1)
-
-    assert result == 4000
-
-
-def test_calculate_rental_cost_invalid_days():
-    with pytest.raises(ValueError):
-        calculate_rental_cost(4000, 0)
+    return user, car
 
 
 def test_create_rental():
-    cars = sample_cars()
-    rentals = []
+    user, car = create_test_user_and_car()
 
     rental = create_rental(
-        rentals,
-        cars,
-        user_id=1,
-        car_id=1,
-        pickup_date="2026-09-10",
-        return_date="2026-09-13",
+        user.id,
+        car.id,
+        "2026-09-10",
+        "2026-09-13"
     )
 
-    assert rental["user_id"] == 1
-    assert rental["car_id"] == 1
-    assert rental["total_cost"] == 12000
-    assert rental["status"] == "active"
+    assert rental.id == 1
+    assert rental.user_id == user.id
+    assert rental.car_id == car.id
+    assert rental.status == "Active"
 
 
-def test_create_rental_makes_car_unavailable():
-    cars = sample_cars()
-    rentals = []
+def test_rental_cost():
+    user, car = create_test_user_and_car()
+
+    rental = create_rental(
+        user.id,
+        car.id,
+        "2026-09-10",
+        "2026-09-13"
+    )
+
+    assert rental.total_cost == 15000
+
+
+def test_rental_is_saved():
+    user, car = create_test_user_and_car()
 
     create_rental(
-        rentals,
-        cars,
-        user_id=1,
-        car_id=1,
-        pickup_date="2026-09-10",
-        return_date="2026-09-13",
+        user.id,
+        car.id,
+        "2026-09-10",
+        "2026-09-13"
     )
 
-    assert cars[0]["available"] is False
+    rentals = get_rentals()
 
-
-def test_cannot_rent_unavailable_car():
-    cars = sample_cars()
-    rentals = []
-
-    with pytest.raises(ValueError):
-        create_rental(
-            rentals,
-            cars,
-            user_id=1,
-            car_id=2,
-            pickup_date="2026-09-10",
-            return_date="2026-09-13",
-        )
+    assert len(rentals) == 1
+    assert rentals[0].id == 1
 
 
 def test_get_rental_by_id():
-    rentals = [
-        {
-            "id": 1,
-            "user_id": 1,
-            "car_id": 1,
-            "pickup_date": "2026-09-10",
-            "return_date": "2026-09-13",
-            "total_cost": 12000,
-            "status": "active",
-        }
-    ]
+    user, car = create_test_user_and_car()
 
-    rental = get_rental_by_id(rentals, 1)
+    create_rental(
+        user.id,
+        car.id,
+        "2026-09-10",
+        "2026-09-13"
+    )
+
+    rental = get_rental_by_id(1)
 
     assert rental is not None
-    assert rental["total_cost"] == 12000
+    assert rental.id == 1
 
 
 def test_get_nonexistent_rental():
-    rentals = []
-
-    rental = get_rental_by_id(rentals, 99)
+    rental = get_rental_by_id(999)
 
     assert rental is None
 
 
-def test_get_user_rentals():
-    rentals = [
-        {
-            "id": 1,
-            "user_id": 1,
-            "car_id": 1,
-            "total_cost": 12000,
-            "status": "active",
-        },
-        {
-            "id": 2,
-            "user_id": 2,
-            "car_id": 2,
-            "total_cost": 15000,
-            "status": "active",
-        },
-    ]
+def test_active_rentals():
+    user, car = create_test_user_and_car()
 
-    result = get_user_rentals(rentals, 1)
+    create_rental(
+        user.id,
+        car.id,
+        "2026-09-10",
+        "2026-09-13"
+    )
 
-    assert len(result) == 1
-    assert result[0]["user_id"] == 1
+    active_rentals = get_active_rentals()
+
+    assert len(active_rentals) == 1
+    assert active_rentals[0].status == "Active"
+
+
+def test_car_becomes_rented():
+    user, car = create_test_user_and_car()
+
+    create_rental(
+        user.id,
+        car.id,
+        "2026-09-10",
+        "2026-09-13"
+    )
+
+    from car_rental.services.car_service import get_car_by_id
+
+    updated_car = get_car_by_id(car.id)
+
+    assert updated_car.status == "Rented"
+
+
+def test_cannot_rent_unavailable_car():
+    user, car = create_test_user_and_car()
+
+    create_rental(
+        user.id,
+        car.id,
+        "2026-09-10",
+        "2026-09-13"
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Car is not available for rental"
+    ):
+        create_rental(
+            user.id,
+            car.id,
+            "2026-09-15",
+            "2026-09-18"
+        )
+
+
+def test_user_must_exist():
+    add_car(
+        "Toyota",
+        "Harrier",
+        2022,
+        "KDA 123A",
+        5000
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="User not found"
+    ):
+        create_rental(
+            999,
+            1,
+            "2026-09-10",
+            "2026-09-13"
+        )
+
+
+def test_car_must_exist():
+    user = register_user(
+        "brian",
+        "password123"
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Car not found"
+    ):
+        create_rental(
+            user.id,
+            999,
+            "2026-09-10",
+            "2026-09-13"
+        )
+
+
+def test_invalid_dates():
+    user, car = create_test_user_and_car()
+
+    with pytest.raises(ValueError):
+        create_rental(
+            user.id,
+            car.id,
+            "2026-09-20",
+            "2026-09-10"
+        )
+
+
+def test_same_start_and_end_date():
+    user, car = create_test_user_and_car()
+
+    with pytest.raises(
+        ValueError,
+        match="Rental must be at least one day"
+    ):
+        create_rental(
+            user.id,
+            car.id,
+            "2026-09-10",
+            "2026-09-10"
+        )
+
+
+def test_return_car():
+    user, car = create_test_user_and_car()
+
+    create_rental(
+        user.id,
+        car.id,
+        "2026-09-10",
+        "2026-09-13"
+    )
+
+    rental = return_car(1)
+
+    assert rental.status == "Completed"
+
+
+def test_car_becomes_available_after_return():
+    user, car = create_test_user_and_car()
+
+    create_rental(
+        user.id,
+        car.id,
+        "2026-09-10",
+        "2026-09-13"
+    )
+
+    return_car(1)
+
+    from car_rental.services.car_service import get_car_by_id
+
+    updated_car = get_car_by_id(car.id)
+
+    assert updated_car.status == "Available"
+
+
+def test_cannot_return_completed_rental():
+    user, car = create_test_user_and_car()
+
+    create_rental(
+        user.id,
+        car.id,
+        "2026-09-10",
+        "2026-09-13"
+    )
+
+    return_car(1)
+
+    with pytest.raises(
+        ValueError,
+        match="Rental is not active"
+    ):
+        return_car(1)
 
 
 def test_cancel_rental():
-    cars = sample_cars()
+    user, car = create_test_user_and_car()
 
-    rentals = [
-        {
-            "id": 1,
-            "user_id": 1,
-            "car_id": 1,
-            "pickup_date": "2026-09-20",
-            "return_date": "2026-09-23",
-            "total_cost": 12000,
-            "status": "active",
-        }
-    ]
-
-    cars[0]["available"] = False
-
-    result = cancel_rental(
-        rentals,
-        cars,
-        rental_id=1,
-        user_id=1,
+    create_rental(
+        user.id,
+        car.id,
+        "2026-09-10",
+        "2026-09-13"
     )
 
-    assert result["status"] == "cancelled"
-    assert cars[0]["available"] is True
+    rental = cancel_rental(1)
+
+    assert rental.status == "Cancelled"
 
 
-def test_cannot_cancel_another_users_rental():
-    cars = sample_cars()
+def test_car_becomes_available_after_cancellation():
+    user, car = create_test_user_and_car()
 
-    rentals = [
-        {
-            "id": 1,
-            "user_id": 1,
-            "car_id": 1,
-            "pickup_date": "2026-09-20",
-            "return_date": "2026-09-23",
-            "total_cost": 12000,
-            "status": "active",
-        }
-    ]
-
-    with pytest.raises(PermissionError):
-        cancel_rental(
-            rentals,
-            cars,
-            rental_id=1,
-            user_id=2,
-        )
-
-
-def test_complete_rental():
-    cars = sample_cars()
-
-    rentals = [
-        {
-            "id": 1,
-            "user_id": 1,
-            "car_id": 1,
-            "pickup_date": "2026-09-10",
-            "return_date": "2026-09-13",
-            "total_cost": 12000,
-            "status": "active",
-        }
-    ]
-
-    cars[0]["available"] = False
-
-    result = complete_rental(
-        rentals,
-        cars,
-        rental_id=1,
+    create_rental(
+        user.id,
+        car.id,
+        "2026-09-10",
+        "2026-09-13"
     )
 
-    assert result["status"] == "completed"
-    assert cars[0]["available"] is True
+    cancel_rental(1)
+
+    from car_rental.services.car_service import get_car_by_id
+
+    updated_car = get_car_by_id(car.id)
+
+    assert updated_car.status == "Available"
 
 
-def test_cannot_complete_nonexistent_rental():
-    cars = sample_cars()
-    rentals = []
+def test_cannot_cancel_completed_rental():
+    user, car = create_test_user_and_car()
 
-    with pytest.raises(ValueError):
-        complete_rental(
-            rentals,
-            cars,
-            rental_id=99,
-        )
+    create_rental(
+        user.id,
+        car.id,
+        "2026-09-10",
+        "2026-09-13"
+    )
+
+    return_car(1)
+
+    with pytest.raises(
+        ValueError,
+        match="Rental is not active"
+    ):
+        cancel_rental(1)
         
