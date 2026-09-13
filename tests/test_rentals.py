@@ -6,6 +6,7 @@ from car_rental.services.rental_service import (
     create_rental,
     get_rentals,
     get_rental_by_id,
+    get_user_rentals,
     get_active_rentals,
     return_car,
     cancel_rental
@@ -118,6 +119,50 @@ def test_get_nonexistent_rental():
     rental = get_rental_by_id(999)
 
     assert rental is None
+    
+def test_get_user_rentals():
+    user = register_user(
+        "brian",
+        "password123"
+    )
+
+    car1 = add_car(
+        "Toyota",
+        "Harrier",
+        2022,
+        "KDA 123A",
+        5000
+    )
+
+    car2 = add_car(
+        "Mazda",
+        "CX-5",
+        2021,
+        "KDB 456B",
+        4500
+    )
+
+    rental1 = create_rental(
+        user.id,
+        car1.id,
+        "2026-09-10",
+        "2026-09-13"
+    )
+
+    return_car(rental1.id)
+
+    rental2 = create_rental(
+        user.id,
+        car2.id,
+        "2026-09-15",
+        "2026-09-18"
+    )
+
+    rentals = get_user_rentals(user.id)
+
+    assert len(rentals) == 2
+    assert rentals[0].id == rental1.id
+    assert rentals[1].id == rental2.id
 
 
 def test_active_rentals():
