@@ -1,0 +1,3 @@
+Werkzeug
+pytest
+pytest-cov
